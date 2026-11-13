@@ -11,6 +11,13 @@ header{background:#fff;border-bottom:1px solid var(--line);padding:22px max(24px
 .brand{font-weight:800;font-size:18px}.brand span{color:var(--blue)}header p{margin:6px 0 0;color:var(--muted);font-size:13px}
 main{max-width:1050px;margin:38px auto;padding:0 22px}.intro{margin-bottom:24px}.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
 h1{font-size:clamp(27px,4vw,38px);margin:8px 0}.intro p{color:var(--muted);line-height:1.6;margin:0}
+/* Tabs */
+.tabs{display:flex;gap:8px;margin-bottom:20px}
+.tab-btn{border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--muted);font-weight:700;font-size:13px;padding:9px 18px;cursor:pointer;transition:all .15s}
+.tab-btn.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.tab-btn:hover:not(.active){background:#edf6ef;color:var(--ink)}
+.tab-panel{display:none}.tab-panel.active{display:block}
+/* Layout */
 .layout{display:grid;grid-template-columns: minmax(260px,.85fr) minmax(320px,1.15fr);gap:20px}
 .card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:24px;box-shadow:0 8px 28px #244b3510}
 h2{font-size:17px;margin:0 0 20px}.field{margin-bottom:17px}label{display:block;font-size:13px;font-weight:700;margin-bottom:8px}
@@ -26,6 +33,12 @@ button:hover{background:#477f60}.error{color:#a34f43;background:#fff3f0;border:1
 .item.primary{background:#edf6ef;border-color:#d8e9dc}.item.wide{grid-column:1/-1}
 .host-count{font-size:28px!important;color:var(--blue)}
 .note{font-size:12px;color:var(--muted);margin:16px 0 0;line-height:1.5}
+/* VLSM table */
+.vlsm-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:4px}
+.vlsm-table th{background:#edf6ef;color:var(--ink);font-weight:700;padding:9px 10px;text-align:left;border-bottom:2px solid var(--line)}
+.vlsm-table td{padding:8px 10px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+.vlsm-table tr:last-child td{border-bottom:0}
+.vlsm-table tr:nth-child(even) td{background:#f7faf7}
 footer{text-align:center;color:#91a397;font-size:12px;padding:28px}
 @media(max-width:760px){main{margin:25px auto}.layout{grid-template-columns:1fr}.card{padding:20px}}
 @media(max-width:390px){.result-grid{grid-template-columns:1fr}.item.wide{grid-column:auto}}
@@ -35,6 +48,15 @@ footer{text-align:center;color:#91a397;font-size:12px;padding:28px}
 <header><div class="brand">NET<span>CALC</span> <span style="color:#91a397;font-weight:500">/ IPv4 tools</span></div><p>Alat sederhana untuk belajar subnetting jaringan komputer.</p></header>
 <main>
 <section class="intro"><div class="eyebrow">Network learning tool</div><h1>Kalkulator Subnet IPv4</h1><p>Masukkan alamat IPv4 dan prefix untuk mengetahui subnet mask, network address, broadcast, rentang host, dan jumlah host yang dapat digunakan.</p></section>
+
+<!-- Tab buttons -->
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('subnet',this)">Subnet Kalkulator</button>
+  <button class="tab-btn" onclick="switchTab('vlsm',this)">VLSM</button>
+</div>
+
+<!-- Tab: Subnet -->
+<div id="tab-subnet" class="tab-panel active">
 <div class="layout">
 <section class="card">
 <h2>Input jaringan</h2>
@@ -61,9 +83,53 @@ footer{text-align:center;color:#91a397;font-size:12px;padding:28px}
 </div>
 </section>
 </div>
+</div>
+
+<!-- Tab: VLSM -->
+<div id="tab-vlsm" class="tab-panel">
+<div class="layout">
+<section class="card">
+<h2>Input VLSM</h2>
+<form id="form-vlsm">
+<div class="field">
+  <label for="vlsm-network">Network (CIDR)</label>
+  <input id="vlsm-network" placeholder="Contoh: 192.168.1.0/24" autocomplete="off" required>
+  <div class="hint">Format: alamat.IP/prefix, misalnya 10.0.0.0/22</div>
+</div>
+<div class="field">
+  <label for="vlsm-hosts">Kebutuhan host (pisahkan dengan koma)</label>
+  <input id="vlsm-hosts" placeholder="Contoh: 100, 50, 20, 2" autocomplete="off" required>
+  <div class="hint">Urutan bebas — VLSM akan mengalokasikan dari yang terbesar.</div>
+</div>
+<button type="submit">Hitung VLSM <span aria-hidden="true">→</span></button>
+<div class="error" id="vlsm-error" role="alert"></div>
+</form>
+</section>
+<section class="card">
+<h2>Alokasi subnet</h2>
+<div class="empty" id="vlsm-empty">Hasil VLSM akan muncul di sini.</div>
+<div class="results" id="vlsm-results">
+  <table class="vlsm-table" id="vlsm-table">
+    <thead><tr><th>#</th><th>Network CIDR</th><th>Mask</th><th>Broadcast</th><th>Host range</th><th>Usable</th></tr></thead>
+    <tbody id="vlsm-tbody"></tbody>
+  </table>
+</div>
+</section>
+</div>
+</div>
+
 </main>
 <footer>NETCALC · Kalkulator Subnet IPv4 untuk pembelajaran TKJ</footer>
 <script>
+// ── Tab switcher ─────────────────────────────────────────────────────────────
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ── Subnet form ──────────────────────────────────────────────────────────────
 const form=document.getElementById('form');
 const errorBox=document.getElementById('error');
 const empty=document.getElementById('empty');
@@ -84,6 +150,31 @@ form.addEventListener('submit',async(e)=>{
   document.getElementById('explain').textContent=prefix==31?'Prefix /31: kedua alamat digunakan untuk koneksi point-to-point.':prefix==32?'Prefix /32: hanya satu alamat IP yang dihitung.':'Perhitungan menggunakan operasi bitwise AND antara alamat IP dan subnet mask.';
   empty.style.display='none';results.style.display='block';
  }catch(err){errorBox.textContent=err.message;errorBox.style.display='block';}
+});
+
+// ── VLSM form ────────────────────────────────────────────────────────────────
+const formVlsm=document.getElementById('form-vlsm');
+const vlsmError=document.getElementById('vlsm-error');
+const vlsmEmpty=document.getElementById('vlsm-empty');
+const vlsmResults=document.getElementById('vlsm-results');
+formVlsm.addEventListener('submit',async(e)=>{
+ e.preventDefault(); vlsmError.style.display='none';
+ const network=document.getElementById('vlsm-network').value.trim();
+ const hostsRaw=document.getElementById('vlsm-hosts').value;
+ const kebutuhan=hostsRaw.split(',').map(s=>parseInt(s.trim(),10)).filter(n=>!isNaN(n));
+ try{
+  const response=await fetch('/api/vlsm',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({network,kebutuhan_host:kebutuhan})});
+  const data=await response.json();
+  if(!response.ok) throw new Error(data.detail||'Terjadi kesalahan.');
+  const tbody=document.getElementById('vlsm-tbody');
+  tbody.innerHTML='';
+  data.forEach((blok,i)=>{
+   const tr=document.createElement('tr');
+   tr.innerHTML=`<td>${i+1}</td><td><strong>${blok.network_cidr}</strong></td><td>${blok.mask}</td><td>${blok.broadcast??'—'}</td><td>${blok.first_host} – ${blok.last_host}</td><td>${Number(blok.usable_hosts).toLocaleString('id-ID')}</td>`;
+   tbody.appendChild(tr);
+  });
+  vlsmEmpty.style.display='none';vlsmResults.style.display='block';
+ }catch(err){vlsmError.textContent=err.message;vlsmError.style.display='block';}
 });
 </script>
 </body>
