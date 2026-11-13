@@ -1,6 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
-from main import app, hitung_subnet
+from main import app, hitung_subnet, alokasi_vlsm
 
 client = TestClient(app)
 
@@ -37,3 +37,58 @@ def test_home():
     response = client.get("/")
     assert response.status_code == 200
     assert "<html" in response.text.lower()
+
+
+# ── VLSM Tests ────────────────────────────────────────────────────────────────
+
+@pytest.mark.parametrize("network,kebutuhan,harapan", [
+    (
+        "192.168.1.0/24",
+        [100, 50, 20, 2],
+        [
+            {"network_cidr": "192.168.1.0/25",   "usable_hosts": 126},
+            {"network_cidr": "192.168.1.128/26",  "usable_hosts": 62},
+            {"network_cidr": "192.168.1.192/27",  "usable_hosts": 30},
+            {"network_cidr": "192.168.1.224/30",  "usable_hosts": 2},
+        ],
+    ),
+    (
+        "10.0.0.0/24",
+        [50, 20],
+        [
+            {"network_cidr": "10.0.0.0/26",   "usable_hosts": 62},
+            {"network_cidr": "10.0.0.64/27",  "usable_hosts": 30},
+        ],
+    ),
+])
+def test_alokasi_vlsm(network, kebutuhan, harapan):
+    result = alokasi_vlsm(network, kebutuhan)
+    assert len(result) == len(harapan)
+    for blok, exp in zip(result, harapan):
+        assert blok["network_cidr"] == exp["network_cidr"]
+        assert blok["usable_hosts"] == exp["usable_hosts"]
+
+
+@pytest.mark.parametrize("network,kebutuhan", [
+    ("192.168.1.0/30", [50, 20]),    # kebutuhan melebihi kapasitas network
+    ("not-valid", [10]),             # format network tidak valid
+    ("192.168.1.0/24", []),          # kebutuhan kosong
+    ("192.168.1.0/24", [0]),         # kebutuhan host 0 tidak valid
+])
+def test_vlsm_invalid(network, kebutuhan):
+    with pytest.raises(ValueError):
+        alokasi_vlsm(network, kebutuhan)
+
+
+def test_api_vlsm_success():
+    payload = {"network": "192.168.1.0/24", "kebutuhan_host": [100, 50, 20, 2]}
+    response = client.post("/api/vlsm", json=payload)
+    assert response.status_code == 200
+    hasil = [b["network_cidr"] for b in response.json()]
+    assert hasil == ["192.168.1.0/25", "192.168.1.128/26", "192.168.1.192/27", "192.168.1.224/30"]
+
+
+def test_api_vlsm_invalid_returns_400():
+    payload = {"network": "192.168.1.0/30", "kebutuhan_host": [50, 20]}
+    response = client.post("/api/vlsm", json=payload)
+    assert response.status_code == 400

@@ -1,6 +1,5 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from pydantic import BaseModel
 
@@ -61,6 +60,16 @@ def hitung_subnet(ip: str, prefix: int) -> dict:
     }
 
 
+def alokasi_vlsm(network: str, kebutuhan_host: list[int]) -> list[dict]:
+    """Kerangka fungsi alokasi VLSM yang belum diimplementasikan."""
+    raise NotImplementedError("Fitur VLSM belum diimplementasikan")
+
+
+class VLSMRequest(BaseModel):
+    network: str
+    kebutuhan_host: list[int]
+
+
 @app.get("/")
 def home():
     return FileResponse(ROOT / "index.html")
@@ -74,14 +83,11 @@ def api_subnet(ip: str, prefix: int):
         raise HTTPException(status_code=400, detail=str(exc))
 
 
-class VLSMRequest(BaseModel):
-    network: str
-    kebutuhan_host: list[int]
-
-
 @app.post("/api/vlsm")
 def api_vlsm(payload: VLSMRequest):
-    raise HTTPException(
-        status_code=501,
-        detail="Fitur VLSM belum diaktifkan pada versi awal kalkulator ini."
-    )
+    try:
+        return alokasi_vlsm(payload.network, payload.kebutuhan_host)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except NotImplementedError as exc:
+        raise HTTPException(status_code=501, detail=str(exc))
