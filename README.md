@@ -46,3 +46,13 @@ Hentikan dan hapus container setelah selesai:
 ```bash
 docker rm -f subnet-app
 ```
+
+## Deploy
+
+Aplikasi ini telah di-deploy ke Vercel pada URL produksi:
+- URL Produksi: https://subnet-calculator-sqa-black.vercel.app/
+
+### Menjalankan Smoke Test Produksi
+```bash
+uv run python scripts/smoke_test.py https://subnet-calculator-sqa-black.vercel.app/
+```
