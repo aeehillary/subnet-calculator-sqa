@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kalkulator Subnet IPv4</title>
+<style>
+:root{--blue:#5b9b78;--ink:#20352a;--muted:#718579;--line:#e2ece5;--bg:#f3f8f4}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+header{background:#fff;border-bottom:1px solid var(--line);padding:22px max(24px,calc((100% - 1050px)/2))}
+.brand{font-weight:800;font-size:18px}.brand span{color:var(--blue)}header p{margin:6px 0 0;color:var(--muted);font-size:13px}
+main{max-width:1050px;margin:38px auto;padding:0 22px}.intro{margin-bottom:24px}.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+h1{font-size:clamp(27px,4vw,38px);margin:8px 0}.intro p{color:var(--muted);line-height:1.6;margin:0}
+.layout{display:grid;grid-template-columns: minmax(260px,.85fr) minmax(320px,1.15fr);gap:20px}
+.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:24px;box-shadow:0 8px 28px #244b3510}
+h2{font-size:17px;margin:0 0 20px}.field{margin-bottom:17px}label{display:block;font-size:13px;font-weight:700;margin-bottom:8px}
+input{width:100%;border:1px solid #cfd8e5;border-radius:10px;padding:13px 14px;font-size:15px;outline:none}
+input:focus{border-color:var(--blue);box-shadow:0 0 0 3px #5b9b781c}
+.hint{font-size:12px;color:var(--muted);margin-top:7px}
+button{border:0;border-radius:10px;background:var(--blue);color:white;font-weight:750;padding:13px 18px;font-size:14px;cursor:pointer;width:100%}
+button:hover{background:#477f60}.error{color:#a34f43;background:#fff3f0;border:1px solid #f5d8d0;padding:11px 13px;border-radius:10px;font-size:13px;margin-top:14px;display:none}
+.empty{color:var(--muted);font-size:14px;line-height:1.6;background:#f7faf7;border:1px dashed #d8e5da;border-radius:12px;padding:22px;text-align:center}
+.results{display:none}.result-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.item{background:#f7faf7;border:1px solid #e8f0e9;border-radius:12px;padding:14px;min-width:0}
+.item small{display:block;color:var(--muted);font-size:11px;margin-bottom:7px}.item strong{font-size:14px;overflow-wrap:anywhere}
+.item.primary{background:#edf6ef;border-color:#d8e9dc}.item.wide{grid-column:1/-1}
+.host-count{font-size:28px!important;color:var(--blue)}
+.note{font-size:12px;color:var(--muted);margin:16px 0 0;line-height:1.5}
+footer{text-align:center;color:#91a397;font-size:12px;padding:28px}
+@media(max-width:760px){main{margin:25px auto}.layout{grid-template-columns:1fr}.card{padding:20px}}
+@media(max-width:390px){.result-grid{grid-template-columns:1fr}.item.wide{grid-column:auto}}
+</style>
+</head>
+<body>
+<header><div class="brand">NET<span>CALC</span> <span style="color:#91a397;font-weight:500">/ IPv4 tools</span></div><p>Alat sederhana untuk belajar subnetting jaringan komputer.</p></header>
+<main>
+<section class="intro"><div class="eyebrow">Network learning tool</div><h1>Kalkulator Subnet IPv4</h1><p>Masukkan alamat IPv4 dan prefix untuk mengetahui subnet mask, network address, broadcast, rentang host, dan jumlah host yang dapat digunakan.</p></section>
+<div class="layout">
+<section class="card">
+<h2>Input jaringan</h2>
+<form id="form">
+<div class="field"><label for="ip">Alamat IP (IPv4)</label><input id="ip" name="ip" placeholder="Contoh: 192.168.1.10" autocomplete="off" required><div class="hint">Gunakan format empat oktet, misalnya 192.168.1.10.</div></div>
+<div class="field"><label for="prefix">Prefix</label><input id="prefix" name="prefix" type="number" min="0" max="32" placeholder="Contoh: 24" required><div class="hint">Nilai prefix berada di antara 0 sampai 32.</div></div>
+<button type="submit">Hitung subnet <span aria-hidden="true">→</span></button>
+<div class="error" id="error" role="alert"></div>
+</form>
+<p class="note">Catatan: Prefix /31 menggunakan aturan point-to-point (2 host), sedangkan /32 menunjukkan satu alamat IP tunggal.</p>
+</section>
+<section class="card">
+<h2>Hasil perhitungan</h2>
+<div class="empty" id="empty">Hasil subnet akan muncul di sini setelah kamu mengisi alamat IP dan prefix, lalu menekan tombol <b>Hitung subnet</b>.</div>
+<div class="results" id="results">
+<div class="result-grid">
+<div class="item primary"><small>Network address</small><strong id="network">—</strong></div>
+<div class="item"><small>Subnet mask</small><strong id="mask">—</strong></div>
+<div class="item"><small>Broadcast address</small><strong id="broadcast">—</strong></div>
+<div class="item"><small>Jumlah host usable</small><strong class="host-count" id="hosts">—</strong></div>
+<div class="item wide"><small>Rentang alamat host</small><strong id="range">—</strong></div>
+</div>
+<p class="note" id="explain"></p>
+</div>
+</section>
+</div>
+</main>
+<footer>NETCALC · Kalkulator Subnet IPv4 untuk pembelajaran TKJ</footer>
+<script>
+const form=document.getElementById('form');
+const errorBox=document.getElementById('error');
+const empty=document.getElementById('empty');
+const results=document.getElementById('results');
+form.addEventListener('submit',async(e)=>{
+ e.preventDefault(); errorBox.style.display='none';
+ const ip=document.getElementById('ip').value;
+ const prefix=document.getElementById('prefix').value;
+ try{
+  const response=await fetch(`/api/subnet?ip=${encodeURIComponent(ip)}&prefix=${encodeURIComponent(prefix)}`);
+  const data=await response.json();
+  if(!response.ok) throw new Error(data.detail||'Terjadi kesalahan.');
+  document.getElementById('network').textContent=data.network;
+  document.getElementById('mask').textContent=data.mask;
+  document.getElementById('broadcast').textContent=data.broadcast??'Tidak ada (aturan khusus)';
+  document.getElementById('hosts').textContent=Number(data.usable_hosts).toLocaleString('id-ID');
+  document.getElementById('range').textContent=data.first_host===data.last_host?data.first_host:`${data.first_host} – ${data.last_host}`;
+  document.getElementById('explain').textContent=prefix==31?'Prefix /31: kedua alamat digunakan untuk koneksi point-to-point.':prefix==32?'Prefix /32: hanya satu alamat IP yang dihitung.':'Perhitungan menggunakan operasi bitwise AND antara alamat IP dan subnet mask.';
+  empty.style.display='none';results.style.display='block';
+ }catch(err){errorBox.textContent=err.message;errorBox.style.display='block';}
+});
+</script>
+</body>
+</html>
